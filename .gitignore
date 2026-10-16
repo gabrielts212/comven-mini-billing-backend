@@ -1,0 +1,17 @@
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.log
+*.vsix
+/.ide/
+.env
+.env.*
+*.db
+*.db-shm
+*.db-wal
+.DS_Store
+node_modules/
+dist/

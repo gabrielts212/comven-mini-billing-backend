@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Comven.Api/Comven.Api.csproj" />
+    <Project Path="src/Comven.Application/Comven.Application.csproj" />
+    <Project Path="src/Comven.Domain/Comven.Domain.csproj" />
+    <Project Path="src/Comven.Infrastructure/Comven.Infrastructure.csproj" />
+    <Project Path="src/Comven.Worker/Comven.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Comven.Tests/Comven.Tests.csproj" />
+  </Folder>
+</Solution>

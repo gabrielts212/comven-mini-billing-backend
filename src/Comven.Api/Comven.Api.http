@@ -1,0 +1,6 @@
+@Comven.Api_HostAddress = http://localhost:5086
+
+GET {{Comven.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

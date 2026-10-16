@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Comven.Worker-11254cdb-cb15-4014-bc22-8203ba366e02</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Comven.Application\Comven.Application.csproj" />
+    <ProjectReference Include="..\Comven.Infrastructure\Comven.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
