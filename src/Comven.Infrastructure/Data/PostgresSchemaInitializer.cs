@@ -8,22 +8,6 @@ public sealed class PostgresSchemaInitializer(IBillingDbConnectionFactory connec
     {
         await using var connection = await connectionFactory.OpenConnectionAsync(cancellationToken);
 
-        var schemaExists = await connection.ExecuteScalarAsync<bool>(
-            new CommandDefinition(
-                """
-                select exists (
-                    select 1
-                    from information_schema.tables
-                    where table_schema = 'public'
-                      and table_name = 'customer_accounts');
-                """,
-                cancellationToken: cancellationToken));
-
-        if (schemaExists)
-        {
-            return;
-        }
-
         var scriptPath = ResolveInitScriptPath();
         var sql = await File.ReadAllTextAsync(scriptPath, cancellationToken);
 

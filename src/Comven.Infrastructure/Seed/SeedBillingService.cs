@@ -156,6 +156,46 @@ public sealed class SeedBillingService(SeedBillingStore store) : IBillingQuerySe
         return Task.FromResult(response);
     }
 
+    public Task<IReadOnlyList<InvoiceResponse>> GetInvoicesAsync(InvoiceFilter filter, CancellationToken cancellationToken)
+    {
+        var response = store.WithLock(state =>
+        {
+            var invoices = state.Invoices
+                .Join(
+                    state.Customers.Values,
+                    invoice => invoice.CustomerExternalId,
+                    customer => customer.ExternalId,
+                    (invoice, customer) => new { invoice, customer })
+                .Where(entry => filter.CustomerExternalId is null || entry.invoice.CustomerExternalId.Equals(filter.CustomerExternalId, StringComparison.OrdinalIgnoreCase))
+                .Select(entry =>
+                {
+                    var periodStart = ParseReferenceMonth(entry.invoice.ReferenceMonth);
+                    var periodEnd = periodStart.AddMonths(1).AddSeconds(-1);
+
+                    return new InvoiceResponse(
+                        entry.invoice.Id,
+                        entry.invoice.CustomerExternalId,
+                        entry.customer.Name,
+                        entry.customer.AccountType,
+                        periodStart,
+                        periodEnd,
+                        entry.invoice.ClosedAt,
+                        entry.invoice.Amount,
+                        entry.invoice.OperationCount,
+                        "closed");
+                })
+                .Where(invoice => filter.From is null || DateOnly.FromDateTime(invoice.PeriodStart.UtcDateTime) >= filter.From)
+                .Where(invoice => filter.To is null || DateOnly.FromDateTime(invoice.PeriodEnd.UtcDateTime) <= filter.To)
+                .OrderByDescending(invoice => invoice.GeneratedAt)
+                .ThenByDescending(invoice => invoice.InvoiceId)
+                .ToList();
+
+            return (IReadOnlyList<InvoiceResponse>)invoices;
+        });
+
+        return Task.FromResult(response);
+    }
+
     public Task<InvoiceCloseResponse> CloseOpenInvoicesAsync(CancellationToken cancellationToken)
     {
         var response = store.WithLock(state =>
@@ -210,5 +250,11 @@ public sealed class SeedBillingService(SeedBillingStore store) : IBillingQuerySe
     {
         var index = Math.Abs(idempotencyKey.GetHashCode()) % Providers.Length;
         return Providers[index];
+    }
+
+    private static DateTimeOffset ParseReferenceMonth(string referenceMonth)
+    {
+        var parts = referenceMonth.Split('-', StringSplitOptions.TrimEntries);
+        return new DateTimeOffset(int.Parse(parts[0]), int.Parse(parts[1]), 1, 0, 0, 0, TimeSpan.Zero);
     }
 }

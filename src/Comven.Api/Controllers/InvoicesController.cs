@@ -8,6 +8,21 @@ namespace Comven.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class InvoicesController(IInvoiceBillingService invoiceBillingService) : ControllerBase
 {
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<InvoiceResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InvoiceResponse>>> Get(
+        [FromQuery] string? customerExternalId = null,
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await invoiceBillingService.GetInvoicesAsync(
+            new InvoiceFilter(customerExternalId, from, to),
+            cancellationToken);
+
+        return Ok(response);
+    }
+
     [HttpPost("close")]
     [ProducesResponseType(typeof(InvoiceCloseResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<InvoiceCloseResponse>> Close(CancellationToken cancellationToken)

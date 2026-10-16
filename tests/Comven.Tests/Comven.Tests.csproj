@@ -9,7 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
@@ -21,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Comven.Application\Comven.Application.csproj" />
     <ProjectReference Include="..\..\src\Comven.Domain\Comven.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Comven.Infrastructure\Comven.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

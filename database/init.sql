@@ -8,6 +8,14 @@ create table if not exists customer_accounts (
     created_at timestamptz not null default now()
 );
 
+create table if not exists providers (
+    code varchar(32) primary key,
+    name varchar(80) not null,
+    priority integer not null unique check (priority between 1 and 10),
+    is_active boolean not null default true,
+    created_at timestamptz not null default now()
+);
+
 create table if not exists billing_operations (
     id uuid primary key,
     idempotency_key varchar(120) not null unique,
@@ -17,11 +25,15 @@ create table if not exists billing_operations (
     kind integer not null check (kind in (1, 2, 3)),
     status integer not null check (status in (1, 2, 3, 4)),
     amount numeric(18, 2) not null,
+    available_balance_after numeric(18, 2) null,
     created_at timestamptz not null,
     response_message varchar(300) not null,
     failure_reason varchar(300) null,
     invoice_id uuid null
 );
+
+alter table if exists billing_operations
+    add column if not exists available_balance_after numeric(18, 2) null;
 
 create table if not exists ledger_entries (
     id uuid primary key,
@@ -43,11 +55,29 @@ create table if not exists invoices (
     constraint uq_invoices_customer_month unique (customer_external_id, reference_month)
 );
 
+create table if not exists operation_audit_events (
+    id uuid primary key,
+    operation_id uuid null,
+    customer_external_id varchar(64) not null,
+    idempotency_key varchar(120) not null,
+    event_type varchar(64) not null,
+    provider_code varchar(32) null,
+    message varchar(300) not null,
+    created_at timestamptz not null,
+    metadata jsonb null
+);
+
 create index if not exists ix_billing_operations_customer_status_invoice
     on billing_operations (customer_external_id, status, invoice_id);
 
 create index if not exists ix_ledger_entries_customer_created_at
     on ledger_entries (customer_external_id, created_at desc);
+
+create index if not exists ix_operation_audit_events_operation_created_at
+    on operation_audit_events (operation_id, created_at);
+
+create index if not exists ix_operation_audit_events_customer_created_at
+    on operation_audit_events (customer_external_id, created_at desc);
 
 create or replace view billing_statement_items as
 select
@@ -71,7 +101,7 @@ select
     bo.status,
     bo.provider,
     bo.response_message as message,
-    ca.available_balance
+    coalesce(bo.available_balance_after, ca.available_balance) as available_balance
 from billing_operations bo
 join customer_accounts ca on ca.external_id = bo.customer_external_id;
 
@@ -81,11 +111,22 @@ values
     ('22222222-2222-2222-2222-222222222222', 'cli-post-001', 'Grace Hopper', 2, 0.00, 15)
 on conflict (external_id) do nothing;
 
-insert into billing_operations (id, idempotency_key, customer_external_id, provider, description, kind, status, amount, created_at, response_message, failure_reason, invoice_id)
+insert into providers (code, name, priority, is_active)
 values
-    ('33333333-3333-3333-3333-333333333331', 'seed-pre-1', 'cli-pre-001', 'Provider A', 'Recarga inicial', 1, 2, 500.00, now() - interval '4 day', 'Operação registrada com sucesso.', null, null),
-    ('33333333-3333-3333-3333-333333333332', 'seed-pre-2', 'cli-pre-001', 'Provider B', 'Pagamento de boleto', 1, 2, 120.00, now() - interval '2 day', 'Operação registrada com sucesso.', null, null),
-    ('33333333-3333-3333-3333-333333333333', 'seed-post-1', 'cli-post-001', 'Provider C', 'Compra pós-paga', 1, 2, 320.00, now() - interval '3 day', 'Operação registrada com sucesso.', null, null)
+    ('provider-a', 'Provider A', 1, true),
+    ('provider-b', 'Provider B', 2, true),
+    ('provider-c', 'Provider C', 3, true)
+on conflict (code) do update
+set
+    name = excluded.name,
+    priority = excluded.priority,
+    is_active = excluded.is_active;
+
+insert into billing_operations (id, idempotency_key, customer_external_id, provider, description, kind, status, amount, available_balance_after, created_at, response_message, failure_reason, invoice_id)
+values
+    ('33333333-3333-3333-3333-333333333331', 'seed-pre-1', 'cli-pre-001', 'Provider A', 'Recarga inicial', 1, 2, 500.00, 1620.00, now() - interval '4 day', 'Operação registrada com sucesso.', null, null),
+    ('33333333-3333-3333-3333-333333333332', 'seed-pre-2', 'cli-pre-001', 'Provider B', 'Pagamento de boleto', 1, 2, 120.00, 1500.00, now() - interval '2 day', 'Operação registrada com sucesso.', null, null),
+    ('33333333-3333-3333-3333-333333333333', 'seed-post-1', 'cli-post-001', 'Provider C', 'Compra pós-paga', 1, 2, 320.00, 0.00, now() - interval '3 day', 'Operação registrada com sucesso.', null, null)
 on conflict (idempotency_key) do nothing;
 
 insert into ledger_entries (id, customer_external_id, operation_id, description, amount, balance_after, created_at)
