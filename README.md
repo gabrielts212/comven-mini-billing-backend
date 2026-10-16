@@ -22,7 +22,19 @@ Hoje a API roda com um servico seedado em memoria para permitir demonstracao ime
 
 O schema PostgreSQL e as dependencias de Dapper/Npgsql ja estao presentes para a proxima iteracao de persistencia real.
 
-## 4. Endpoints disponiveis 🌐
+## 4. Banco de dados e uso com Render 🗄️
+
+O projeto possui uma base PostgreSQL modelada para suportar contas, operacoes financeiras, lancamentos de extrato, faturas e eventos de auditoria.
+
+O arquivo `database/init.sql` cria tabelas, views, indices e dados iniciais para demonstracao, enquanto a infraestrutura usa `Dapper` com `Npgsql` para conexao e acesso ao banco.
+
+Localmente, o banco pode ser executado com Docker, e o `docker-compose.yml` ja conecta a API ao servico `postgres`, alem de montar o arquivo de inicializacao automaticamente.
+
+No deploy com Render, a ideia e usar um servico PostgreSQL gerenciado e informar a string de conexao pela variavel `ConnectionStrings__Postgres`. Assim, a aplicacao continua usando a mesma estrutura de banco, mudando apenas a configuracao do ambiente.
+
+A API e o Worker tambem executam a inicializacao do schema na subida da aplicacao, o que ajuda a manter o banco pronto para uso tanto localmente quanto em hospedagem.
+
+## 5. Endpoints disponiveis 🌐
 
 Estes sao os endpoints atualmente expostos pela API:
 
@@ -31,7 +43,7 @@ Estes sao os endpoints atualmente expostos pela API:
 - `POST /api/operations`
 - `POST /api/invoices/close`
 
-## 5. Como rodar localmente ▶️
+## 6. Como rodar localmente ▶️
 
 Primeiro passo: compile o projeto.
 
@@ -51,7 +63,7 @@ Por fim: suba a API localmente. ✔️
 dotnet run --project src/Comven.Api
 ```
 
-## 6. Exemplo de payload de operacao 🧾
+## 7. Exemplo de payload de operacao 🧾
 
 ```json
 {
@@ -64,7 +76,7 @@ dotnet run --project src/Comven.Api
 }
 ```
 
-## 7. Prioridades da proxima iteracao 🔄
+## 8. Prioridades da proxima iteracao 🔄
 
 1. Trocar o servico seedado por repositorios Dapper transacionais.
 2. Persistir tentativas por fornecedor e estorno unico no banco.
