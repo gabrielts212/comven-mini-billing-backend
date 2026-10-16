@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY Comven.slnx ./
+COPY database ./database
 COPY src ./src
 COPY tests ./tests
 
@@ -18,6 +19,7 @@ RUN apt-get update \
 ENV ASPNETCORE_URLS=http://+:8080
 
 COPY --from=build /app/publish ./
+COPY --from=build /src/database ./database
 
 EXPOSE 8080
 
